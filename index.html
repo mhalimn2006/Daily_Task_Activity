@@ -1,0 +1,2463 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full bg-slate-50 transition-colors duration-300">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ActiPlan Pro v2.2 - Standalone System</title>
+  
+  <!-- Tailwind CSS CDN dengan Konfigurasi Tema Kustom -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f5f3ff',
+              100: '#ede9fe',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- FullCalendar v6 CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+  
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- SweetAlert2 CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <!-- SheetJS CDN (Pustaka Ekspor Excel Modern) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  
+  <style>
+    /* Desain Scrollbar Modern */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    .dark ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+    }
+    .dark ::-webkit-scrollbar-thumb {
+      background: #475569;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    
+    /* FullCalendar custom styling integration */
+    .fc {
+      font-family: inherit;
+    }
+    .fc .fc-button-primary {
+      background-color: #4f46e5 !important;
+      border-color: #4f46e5 !important;
+    }
+    .fc .fc-button-primary:hover {
+      background-color: #4338ca !important;
+      border-color: #4338ca !important;
+    }
+    .fc .fc-button-active {
+      background-color: #3730a3 !important;
+      border-color: #3730a3 !important;
+    }
+    .fc-theme-standard td, .fc-theme-standard th {
+      border-color: #e2e8f0 !important;
+    }
+    
+    /* Kustomisasi Kalender untuk Mode Gelap */
+    .dark .fc-theme-standard td, .dark .fc-theme-standard th {
+      border-color: #334155 !important;
+    }
+    .dark .fc-col-header-cell-cushion, 
+    .dark .fc-daygrid-day-number, 
+    .dark .fc-list-day-text, 
+    .dark .fc-list-day-side-text,
+    .dark .fc-list-event-title,
+    .dark .fc-toolbar-title {
+      color: #f1f5f9 !important;
+    }
+    .dark .fc-day-today {
+      background-color: rgba(99, 102, 241, 0.15) !important;
+    }
+  </style>
+</head>
+<body class="h-full flex overflow-hidden bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-slate-900 text-slate-100 transition-all duration-300 md:static md:translate-x-0 -translate-x-full border-r border-slate-800 shrink-0">
+    <div class="flex h-16 items-center justify-between px-6 border-b border-slate-800">
+      <div class="flex items-center gap-3">
+        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-600 text-white shadow-lg shadow-brand-500/30">
+          <i class="fa-solid fa-calendar-check text-lg"></i>
+        </div>
+        <div>
+          <h1 class="text-base font-bold tracking-wide">ActiPlan Pro</h1>
+          <span class="text-xs text-slate-400">Direct Engine v2.2</span>
+        </div>
+      </div>
+      <button onclick="toggleSidebar()" class="text-slate-400 hover:text-white md:hidden">
+        <i class="fa-solid fa-xmark text-xl"></i>
+      </button>
+    </div>
+
+    <!-- Navigasi Menu -->
+    <nav class="flex-1 space-y-1.5 px-4 py-6 overflow-y-auto">
+      <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition text-sm font-medium bg-brand-600 text-white shadow-md shadow-brand-600/10">
+        <i class="fa-solid fa-chart-pie text-lg w-5"></i>
+        <span data-i18n="navDashboard">Dashboard Analitik</span>
+      </button>
+      
+      <button onclick="switchTab('calendar')" id="nav-calendar" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-white">
+        <i class="fa-solid fa-calendar-days text-lg w-5"></i>
+        <span data-i18n="navCalendar">Kalender Interaktif</span>
+      </button>
+      
+      <button onclick="switchTab('rawdata')" id="nav-rawdata" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-white">
+        <i class="fa-solid fa-table-list text-lg w-5"></i>
+        <span data-i18n="navRawData">Manajemen Data</span>
+      </button>
+
+      <div class="pt-4 border-t border-slate-800 mt-4">
+        <span class="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider" data-i18n="navMasterSetup">Pengaturan Master</span>
+      </div>
+
+      <button onclick="switchTab('master-settings')" id="nav-master-settings" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-white">
+        <i class="fa-solid fa-gears text-lg w-5"></i>
+        <span data-i18n="navCategoriesStatus">Kategori, Status & Kolom</span>
+      </button>
+    </nav>
+
+    <!-- Info User (Sistem Mandiri) -->
+    <div class="p-4 border-t border-slate-800 bg-slate-950/40">
+      <div class="flex items-center gap-3">
+        <div class="h-9 w-9 rounded-full bg-slate-700 flex items-center justify-center text-sm font-bold text-slate-200" id="user-initial">
+          S
+        </div>
+        <div class="overflow-hidden">
+          <p class="text-xs text-slate-400" id="user-role-label" data-i18n="userActiveLabel">Sistem Lokal:</p>
+          <p class="text-xs font-semibold text-slate-200 truncate" id="user-email">Administrator</p>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- KONTEN UTAMA -->
+  <main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
+    
+    <!-- TOP BAR -->
+    <header class="flex h-16 items-center justify-between border-b border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-800 px-6 shrink-0 transition-colors duration-300">
+      <div class="flex items-center gap-4">
+        <button onclick="toggleSidebar()" class="text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white md:hidden">
+          <i class="fa-solid fa-bars text-xl"></i>
+        </button>
+        <h2 id="page-title" class="text-xl font-bold text-slate-800 dark:text-white" data-i18n="titleDashboard">Dashboard Analitik</h2>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+        
+        <!-- BUTTON BILINGUAL SWITCHER -->
+        <button onclick="toggleLanguage()" class="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/80 transition" title="Switch Language">
+          <i class="fa-solid fa-globe text-brand-600 dark:text-brand-500"></i>
+          <span id="language-label">ID</span>
+        </button>
+
+        <!-- BUTTON LIGHT/DARK THEME TOGGLE -->
+        <button onclick="toggleTheme()" class="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/80 transition" id="theme-toggle-btn" title="Toggle Bright/Dark View">
+          <i id="theme-icon" class="fa-solid fa-moon"></i>
+        </button>
+
+        <!-- FILTER PILIHAN TAHUN -->
+        <div class="flex items-center gap-2 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 bg-slate-50 dark:bg-slate-800 transition-colors duration-300">
+          <label id="year-filter-label" for="global-year-filter" class="text-[10px] sm:text-xs font-bold text-slate-500 dark:text-slate-400 uppercase"><i class="fa-solid fa-filter mr-1"></i>Tahun:</label>
+          <select id="global-year-filter" onchange="handleYearChange()" class="bg-transparent border-none text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer">
+            <option value="ALL">Semua</option>
+          </select>
+        </div>
+
+        <button onclick="openAddModal()" class="flex items-center gap-2 rounded-xl bg-brand-600 px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-sm hover:bg-brand-700 transition">
+          <i class="fa-solid fa-plus"></i>
+          <span class="hidden sm:inline" data-i18n="btnCreateActivity">Buat Aktivitas</span>
+        </button>
+
+        <button onclick="refreshData(true)" class="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition" title="Refresh Data">
+          <i id="refresh-icon" class="fa-solid fa-arrows-rotate"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- VIEWPORT KONTEN UTAMA -->
+    <div class="flex-1 overflow-y-auto p-6 space-y-6">
+
+      <!-- ================= TAB: DASHBOARD ================= -->
+      <section id="tab-dashboard" class="tab-content space-y-6">
+        <!-- Metrics Cards -->
+        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div class="flex items-center gap-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm transition-colors duration-300">
+            <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400">
+              <i class="fa-solid fa-folder-open text-xl"></i>
+            </div>
+            <div>
+              <span class="text-sm font-medium text-slate-400 dark:text-slate-400" data-i18n="statFiltered">Aktivitas Terfilter</span>
+              <h3 id="stat-total" class="text-2xl font-bold text-slate-800 dark:text-white">0</h3>
+            </div>
+          </div>
+          <div class="flex items-center gap-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm transition-colors duration-300">
+            <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400">
+              <i class="fa-solid fa-spinner fa-spin text-xl"></i>
+            </div>
+            <div>
+              <span class="text-sm font-medium text-slate-400 dark:text-slate-400" data-i18n="statInProgress">Sedang Berjalan</span>
+              <h3 id="stat-progress" class="text-2xl font-bold text-slate-800 dark:text-white">0</h3>
+            </div>
+          </div>
+          <div class="flex items-center gap-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm transition-colors duration-300">
+            <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400">
+              <i class="fa-solid fa-circle-check text-xl"></i>
+            </div>
+            <div>
+              <span class="text-sm font-medium text-slate-400 dark:text-slate-400" data-i18n="statCompleted">Selesai</span>
+              <h3 id="stat-completed" class="text-2xl font-bold text-slate-800 dark:text-white">0</h3>
+            </div>
+          </div>
+          <div class="flex items-center gap-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm transition-colors duration-300">
+            <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+              <i class="fa-solid fa-clock text-xl"></i>
+            </div>
+            <div>
+              <span class="text-sm font-medium text-slate-400 dark:text-slate-400" data-i18n="statPending">Menunggu (Pending)</span>
+              <h3 id="stat-pending" class="text-2xl font-bold text-slate-800 dark:text-white">0</h3>
+            </div>
+          </div>
+        </div>
+
+        <!-- Grafik -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm transition-colors duration-300">
+            <h4 class="text-base font-bold text-slate-800 dark:text-white mb-4" data-i18n="chartCategoryTitle">Aktivitas Berdasarkan Kategori</h4>
+            <div class="relative h-64 flex justify-center">
+              <canvas id="categoryChart"></canvas>
+            </div>
+          </div>
+          <div class="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm transition-colors duration-300">
+            <h4 class="text-base font-bold text-slate-800 dark:text-white mb-4" data-i18n="chartStatusTitle">Distribusi Status Aktivitas</h4>
+            <div class="relative h-64 flex justify-center">
+              <canvas id="statusChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Aktivitas Terdekat -->
+        <div class="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm transition-colors duration-300">
+          <div class="flex items-center justify-between mb-4">
+            <h4 class="text-base font-bold text-slate-800 dark:text-white" data-i18n="upcomingActivities">Daftar Aktivitas Mendatang</h4>
+            <button onclick="switchTab('calendar')" class="text-sm text-brand-600 dark:text-brand-400 font-semibold hover:underline" data-i18n="viewCalendar">Lihat Kalender</button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 text-xs font-semibold uppercase">
+                  <th class="py-3 px-4" data-i18n="thActivity">Aktivitas</th>
+                  <th class="py-3 px-4" data-i18n="thCategory">Kategori</th>
+                  <th class="py-3 px-4" data-i18n="thStatus">Status</th>
+                  <th class="py-3 px-4" data-i18n="thStart">Mulai</th>
+                  <th class="py-3 px-4" data-i18n="thEnd">Selesai</th>
+                </tr>
+              </thead>
+              <tbody id="recent-activities-list" class="divide-y divide-slate-50 dark:divide-slate-800/60 text-sm text-slate-600 dark:text-slate-300">
+                <!-- Data Dinamis -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB: CALENDAR ================= -->
+      <section id="tab-calendar" class="tab-content hidden">
+        <div class="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm transition-colors duration-300">
+          <div id="calendar-container" class="min-h-[500px]"></div>
+        </div>
+      </section>
+
+      <!-- ================= TAB: RAW DATA ================= -->
+      <section id="tab-rawdata" class="tab-content hidden space-y-4">
+        <!-- Filter Bar & Actions -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm transition-colors duration-300">
+          <div class="flex flex-1 flex-wrap items-center gap-3">
+            <div class="relative w-full max-w-xs">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                <i class="fa-solid fa-magnifying-glass"></i>
+              </span>
+              <input type="text" id="search-input" oninput="filterRawData()" placeholder="Cari aktivitas..." class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm pl-10 pr-4 py-2 focus:border-brand-500 focus:outline-none dark:text-white" data-i18n-placeholder="searchPlaceholder">
+            </div>
+            
+            <select id="filter-category" onchange="filterRawData()" class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm px-3 py-2 focus:border-brand-500 focus:outline-none dark:text-white">
+              <option value="" data-i18n="optAllCategory">Semua Kategori</option>
+            </select>
+            
+            <select id="filter-status" onchange="filterRawData()" class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm px-3 py-2 focus:border-brand-500 focus:outline-none dark:text-white">
+              <option value="" data-i18n="optAllStatus">Semua Status</option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-2 self-end md:self-auto">
+            <!-- EXPORT TO XLSX BUTTON -->
+            <button onclick="exportToExcel()" class="flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition">
+              <i class="fa-solid fa-file-excel"></i>
+              <span data-i18n="btnExportXlsx">Ekspor ke XLSX</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Tabel Data -->
+        <div class="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden transition-colors duration-300">
+          <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
+            <table class="w-full text-left border-collapse">
+              <thead class="sticky top-0 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-300 text-xs font-semibold uppercase z-10">
+                <!-- Header Di-render Dinamis untuk Menyisipkan Kolom Kustom -->
+              </thead>
+              <tbody id="raw-data-table" class="divide-y divide-slate-100 dark:divide-slate-800 text-sm text-slate-700 dark:text-slate-300">
+                <!-- Data Dinamis -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB: MASTER SETTINGS (CRUD) ================= -->
+      <section id="tab-master-settings" class="tab-content hidden space-y-6">
+        
+        <!-- INTEGRASI SPREADSHEET CARD -->
+        <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm transition-colors duration-300">
+          <div class="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-4 mb-4">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400">
+              <i class="fa-solid fa-cloud-arrow-up text-lg"></i>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-slate-800 dark:text-white" data-i18n="sheetPanelTitle">Koneksi Google Spreadsheet Database</h3>
+              <p class="text-xs text-slate-400 dark:text-slate-500" data-i18n="sheetPanelDesc">Hubungkan standalone engine ini dengan Google Sheet pusat melalui Apps Script URL.</p>
+            </div>
+          </div>
+          <div class="space-y-4">
+            <div>
+              <label for="spreadsheet-url-input" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Web App Deployment URL (Google Apps Script)</label>
+              <div class="flex flex-col sm:flex-row gap-3">
+                <input type="text" id="spreadsheet-url-input" placeholder="https://script.google.com/macros/s/.../exec" class="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white px-4 py-2.5 text-sm focus:border-brand-500 focus:outline-none">
+                <button onclick="saveSpreadsheetUrl()" class="rounded-xl bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 text-sm font-bold shadow-sm transition" data-i18n="btnSave">Simpan</button>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-3 pt-2">
+              <button onclick="uploadLocalData()" class="flex items-center gap-2 rounded-xl border border-emerald-600 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 px-4 py-2 text-xs font-bold transition">
+                <i class="fa-solid fa-arrow-up-from-bracket"></i>
+                <span data-i18n="uploadData">Unggah Data Lokal</span>
+              </button>
+              <button onclick="downloadSheetData()" class="flex items-center gap-2 rounded-xl border border-brand-600 text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-950/20 px-4 py-2 text-xs font-bold transition">
+                <i class="fa-solid fa-arrow-down-to-bracket"></i>
+                <span data-i18n="downloadData">Unduh Data Spreadsheet</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          
+          <!-- CRUD Kategori -->
+          <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col h-[550px] transition-colors duration-300">
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 mb-4">
+              <div>
+                <h3 class="text-lg font-bold text-slate-800 dark:text-white" data-i18n="masterCategoryTitle">Master Data Kategori</h3>
+                <p class="text-xs text-slate-400 dark:text-slate-500" data-i18n="masterCategoryDesc">Kelola kelompok aktivitas & skema warna</p>
+              </div>
+              <button onclick="openCategoryModal()" class="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-indigo-700 transition">
+                <i class="fa-solid fa-plus"></i> <span data-i18n="btnAddCategory">Kategori</span>
+              </button>
+            </div>
+            <div class="flex-1 overflow-y-auto pr-1">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="text-slate-400 dark:text-slate-500 text-[10px] font-bold uppercase border-b border-slate-100 dark:border-slate-800">
+                    <th class="pb-2" data-i18n="thCategory">Kategori</th>
+                    <th class="pb-2" data-i18n="thPreview">Pratinjau Label</th>
+                    <th class="pb-2 text-right" data-i18n="thAction">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="master-categories-table" class="divide-y divide-slate-100 dark:divide-slate-800 text-sm text-slate-700 dark:text-slate-300">
+                  <!-- Data Dinamis -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- CRUD Status -->
+          <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col h-[550px] transition-colors duration-300">
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 mb-4">
+              <div>
+                <h3 class="text-lg font-bold text-slate-800 dark:text-white" data-i18n="masterStatusTitle">Master Data Status</h3>
+                <p class="text-xs text-slate-400 dark:text-slate-500" data-i18n="masterStatusDesc">Kelola state alur aktivitas & gaya badge</p>
+              </div>
+              <button onclick="openStatusModal()" class="flex items-center gap-1.5 rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-sky-700 transition">
+                <i class="fa-solid fa-plus"></i> <span data-i18n="btnAddStatus">Status</span>
+              </button>
+            </div>
+            <div class="flex-1 overflow-y-auto pr-1">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="text-slate-400 dark:text-slate-500 text-[10px] font-bold uppercase border-b border-slate-100 dark:border-slate-800">
+                    <th class="pb-2" data-i18n="thStatus">Status</th>
+                    <th class="pb-2" data-i18n="thPreview">Pratinjau Badge</th>
+                    <th class="pb-2 text-right" data-i18n="thAction">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="master-statuses-table" class="divide-y divide-slate-100 dark:divide-slate-800 text-sm text-slate-700 dark:text-slate-300">
+                  <!-- Data Dinamis -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- CRUD KOLOM KUSTOM (Fields) -->
+          <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col h-[550px] transition-colors duration-300">
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 mb-4">
+              <div>
+                <h3 class="text-lg font-bold text-slate-800 dark:text-white" data-i18n="masterFieldTitle">Kolom Tambahan (CRUD)</h3>
+                <p class="text-xs text-slate-400 dark:text-slate-500" data-i18n="masterFieldDesc">Atribut kustom & dinamis untuk form aktivitas</p>
+              </div>
+              <button onclick="openFieldModal()" class="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 transition">
+                <i class="fa-solid fa-plus"></i> <span data-i18n="btnAddField">Kolom Baru</span>
+              </button>
+            </div>
+            <div class="flex-1 overflow-y-auto pr-1">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="text-slate-400 dark:text-slate-500 text-[10px] font-bold uppercase border-b border-slate-100 dark:border-slate-800">
+                    <th class="pb-2" data-i18n="thFieldName">Nama Kolom</th>
+                    <th class="pb-2" data-i18n="thFieldType">Tipe</th>
+                    <th class="pb-2" data-i18n="thRequired">Wajib?</th>
+                    <th class="pb-2 text-right" data-i18n="thAction">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="master-fields-table" class="divide-y divide-slate-100 dark:divide-slate-800 text-sm text-slate-700 dark:text-slate-300">
+                  <!-- Data Dinamis -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ================= MODAL: ADD / EDIT ACTIVITY ================= -->
+  <div id="activity-modal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-xs transition-opacity">
+    <div class="relative w-full max-w-lg rounded-2xl bg-white dark:bg-slate-900 border dark:border-slate-800 shadow-2xl transition-transform scale-95 duration-200">
+      <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-6 py-4">
+        <h3 id="modal-title" class="text-lg font-bold text-slate-800 dark:text-white" data-i18n="modalTitleCreate">Buat Aktivitas Baru</h3>
+        <button onclick="closeActivityModal()" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-300 transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <form id="activity-form" onsubmit="handleFormSubmit(event)" class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+        <input type="hidden" id="form-id">
+        
+        <div>
+          <label for="form-title" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1"><span data-i18n="labelActivityName">Nama Aktivitas</span> <span class="text-rose-500">*</span></label>
+          <input type="text" id="form-title" required placeholder="Contoh: Sinkronisasi Data Master" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white px-4 py-2.5 text-sm focus:border-brand-500 focus:outline-none" data-i18n-placeholder="activityPlaceholder">
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label for="form-start" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1"><span data-i18n="labelStart">Mulai</span> <span class="text-rose-500">*</span></label>
+            <input type="datetime-local" id="form-start" required class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white px-4 py-2.5 text-sm focus:border-brand-500 focus:outline-none">
+          </div>
+          <div>
+            <label for="form-end" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1"><span data-i18n="labelEnd">Selesai</span> <span class="text-rose-500">*</span></label>
+            <input type="datetime-local" id="form-end" required class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white px-4 py-2.5 text-sm focus:border-brand-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label for="form-category" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1" data-i18n="thCategory">Kategori</label>
+            <select id="form-category" onchange="autoAssignColor()" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white px-4 py-2.5 text-sm focus:border-brand-500 focus:outline-none">
+              <!-- Diisi secara dinamis dari master data -->
+            </select>
+          </div>
+          <div>
+            <label for="form-status" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1" data-i18n="thStatus">Status</label>
+            <select id="form-status" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white px-4 py-2.5 text-sm focus:border-brand-500 focus:outline-none">
+              <!-- Diisi secara dinamis dari master data -->
+            </select>
+          </div>
+        </div>
+
+        <!-- TEMPAT UNTUK MERENDER INPUT FIELD DINAMIS (KOLOM KUSTOM CRUD) -->
+        <div id="dynamic-fields-container" class="space-y-4 pt-1 border-t border-slate-100 dark:border-slate-800/80">
+          <!-- Diisi secara dinamis oleh JavaScript -->
+        </div>
+
+        <!-- FORM TOGGLE KEAKTIFAN -->
+        <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700/60">
+          <div>
+            <label class="text-sm font-semibold text-slate-700 dark:text-slate-300" data-i18n="lblActiveStatus">Status Keaktifan</label>
+            <p class="text-xs text-slate-400 dark:text-slate-500" id="form-active-desc">Aktivitas ini aktif dan tampil di dasbor.</p>
+          </div>
+          <button type="button" id="form-active-toggle" onclick="toggleFormActiveState()" class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none bg-brand-600">
+            <span id="form-active-circle" class="translate-x-5 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out"></span>
+          </button>
+        </div>
+
+        <div>
+          <label for="form-color" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1" data-i18n="labelColorPicker">Warna Label Kalender</label>
+          <div class="flex items-center gap-3">
+            <input type="color" id="form-color" value="#4F46E5" class="h-10 w-10 cursor-pointer rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-1">
+            <span class="text-xs text-slate-400 dark:text-slate-500" data-i18n="labelColorHelp">Pilih warna khusus atau gunakan skema bawaan kategori</span>
+          </div>
+        </div>
+
+        <div>
+          <label for="form-description" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1" data-i18n="labelDesc">Deskripsi & Catatan</label>
+          <textarea id="form-description" rows="3" placeholder="Masukkan detail agenda rapat, catatan, lokasi, dsb." class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white px-4 py-2.5 text-sm focus:border-brand-500 focus:outline-none" data-i18n-placeholder="descPlaceholder"></textarea>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 border-t border-slate-100 dark:border-slate-800 pt-4 mt-6">
+          <button type="button" onclick="closeActivityModal()" class="rounded-xl border border-slate-200 dark:border-slate-700 dark:text-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition" data-i18n="btnCancel">Batal</button>
+          <button type="submit" id="btn-save" class="rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 transition flex items-center gap-2">
+            <i class="fa-solid fa-floppy-disk"></i> <span data-i18n="btnSave">Simpan Aktivitas</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: CRUD CATEGORY ================= -->
+  <div id="category-modal" class="fixed inset-0 z-[110] hidden items-center justify-center p-4 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-xs transition-opacity">
+    <div class="relative w-full max-w-sm rounded-2xl bg-white dark:bg-slate-900 border dark:border-slate-800 shadow-2xl scale-95 duration-200">
+      <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-6 py-4">
+        <h3 id="category-modal-title" class="text-base font-bold text-slate-800 dark:text-white" data-i18n="modalTitleAddCategory">Tambah Kategori</h3>
+        <button onclick="closeCategoryModal()" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-300 transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      <form id="category-form" onsubmit="handleCategorySubmit(event)" class="p-6 space-y-4">
+        <input type="hidden" id="cat-id">
+        <div>
+          <label for="cat-name" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1"><span data-i18n="labelCategoryName">Nama Kategori</span> <span class="text-rose-500">*</span></label>
+          <input type="text" id="cat-name" required placeholder="Contoh: Rapat" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white px-4 py-2 text-sm focus:border-brand-500 focus:outline-none" data-i18n-placeholder="catNamePlaceholder">
+        </div>
+        <div>
+          <label for="cat-color" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1" data-i18n="labelThemeColor">Pilihan Warna Tema</label>
+          <div class="flex items-center gap-3">
+            <input type="color" id="cat-color" value="#6366f1" class="h-10 w-10 cursor-pointer rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-1">
+            <span class="text-xs text-slate-400 dark:text-slate-500" data-i18n="labelThemeColorHelp">Menentukan visualisasi warna kalender default</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+          <button type="button" onclick="closeCategoryModal()" class="rounded-xl border border-slate-200 dark:border-slate-700 dark:text-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition" data-i18n="btnCancel">Batal</button>
+          <button type="submit" class="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition" data-i18n="btnSaveCategory">Simpan Kategori</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: CRUD STATUS ================= -->
+  <div id="status-modal" class="fixed inset-0 z-[110] hidden items-center justify-center p-4 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-xs transition-opacity">
+    <div class="relative w-full max-w-sm rounded-2xl bg-white dark:bg-slate-900 border dark:border-slate-800 shadow-2xl scale-95 duration-200">
+      <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-6 py-4">
+        <h3 id="status-modal-title" class="text-base font-bold text-slate-800 dark:text-white" data-i18n="modalTitleAddStatus">Tambah Status</h3>
+        <button onclick="closeStatusModal()" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-300 transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      <form id="status-form" onsubmit="handleStatusSubmit(event)" class="p-6 space-y-4">
+        <input type="hidden" id="stat-id">
+        <div>
+          <label for="stat-name" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1"><span data-i18n="labelStatusName">Nama Status</span> <span class="text-rose-500">*</span></label>
+          <input type="text" id="stat-name" required placeholder="Contoh: Completed" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white px-4 py-2 text-sm focus:border-brand-500 focus:outline-none" data-i18n-placeholder="statusNamePlaceholder">
+        </div>
+        <div>
+          <label for="stat-color" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1" data-i18n="labelBadgeColor">Pilihan Warna Badge</label>
+          <div class="flex items-center gap-3">
+            <input type="color" id="stat-color" value="#10b981" class="h-10 w-10 cursor-pointer rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-1">
+            <span class="text-xs text-slate-400 dark:text-slate-500" data-i18n="labelBadgeColorHelp">Menentukan skema warna indikator di tabel</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+          <button type="button" onclick="closeStatusModal()" class="rounded-xl border border-slate-200 dark:border-slate-700 dark:text-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition" data-i18n="btnCancel">Batal</button>
+          <button type="submit" class="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition" data-i18n="btnSaveStatus">Simpan Status</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: CRUD COLUMN/FIELD ================= -->
+  <div id="field-modal" class="fixed inset-0 z-[110] hidden items-center justify-center p-4 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-xs transition-opacity">
+    <div class="relative w-full max-w-sm rounded-2xl bg-white dark:bg-slate-900 border dark:border-slate-800 shadow-2xl scale-95 duration-200">
+      <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-6 py-4">
+        <h3 id="field-modal-title" class="text-base font-bold text-slate-800 dark:text-white" data-i18n="modalTitleAddField">Tambah Kolom Kustom</h3>
+        <button onclick="closeFieldModal()" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-300 transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      <form id="field-form" onsubmit="handleFieldSubmit(event)" class="p-6 space-y-4">
+        <input type="hidden" id="field-id">
+        <div>
+          <label for="field-name" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1"><span data-i18n="labelFieldName">Nama Kolom</span> <span class="text-rose-500">*</span></label>
+          <input type="text" id="field-name" required placeholder="Contoh: Lokasi" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white px-4 py-2 text-sm focus:border-brand-500 focus:outline-none" data-i18n-placeholder="fieldNamePlaceholder">
+        </div>
+        <div>
+          <label for="field-type" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1" data-i18n="labelFieldType">Tipe Data</label>
+          <select id="field-type" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white px-4 py-2 text-sm focus:border-brand-500 focus:outline-none">
+            <option value="text">Text / String</option>
+            <option value="number">Number / Angka</option>
+            <option value="date">Date / Tanggal</option>
+          </select>
+        </div>
+        <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700/60">
+          <label class="text-sm font-semibold text-slate-700 dark:text-slate-300" data-i18n="labelFieldRequired">Wajib Diisi?</label>
+          <input type="checkbox" id="field-required" class="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500">
+        </div>
+        <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+          <button type="button" onclick="closeFieldModal()" class="rounded-xl border border-slate-200 dark:border-slate-700 dark:text-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition" data-i18n="btnCancel">Batal</button>
+          <button type="submit" class="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition" data-i18n="btnSave">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- LOADING SPINNER GLOBAL -->
+  <div id="global-spinner" class="fixed inset-0 z-[200] hidden items-center justify-center bg-slate-900/40 dark:bg-slate-950/70 backdrop-blur-xs">
+    <div class="flex flex-col items-center gap-4 rounded-2xl bg-white dark:bg-slate-900 p-8 shadow-2xl text-center border dark:border-slate-800">
+      <div class="h-12 w-12 animate-spin rounded-full border-4 border-slate-200 dark:border-slate-700 border-t-brand-600 dark:border-t-brand-500"></div>
+      <p class="text-sm font-semibold text-slate-700 dark:text-slate-300" id="spinner-text">Memproses data...</p>
+    </div>
+  </div>
+
+  <script>
+    // Kamus Terjemahan Bilingual
+    const translations = {
+      id: {
+        navDashboard: "Dashboard Analitik",
+        navCalendar: "Kalender Interaktif",
+        navRawData: "Manajemen Data",
+        navMasterSetup: "Pengaturan Master",
+        navCategoriesStatus: "Kategori, Status & Kolom",
+        userActiveLabel: "Sistem Lokal:",
+        titleDashboard: "Dashboard Analitik",
+        titleCalendar: "Kalender Interaktif",
+        titleRawData: "Manajemen Data Aktivitas",
+        titleMasterSettings: "Pengaturan Kategori, Status & Kolom",
+        btnCreateActivity: "Buat Aktivitas",
+        statFiltered: "Aktivitas Terfilter",
+        statInProgress: "Sedang Berjalan",
+        statCompleted: "Selesai",
+        statPending: "Menunggu (Pending)",
+        chartCategoryTitle: "Aktivitas Berdasarkan Kategori",
+        chartStatusTitle: "Distribusi Status Aktivitas",
+        upcomingActivities: "Daftar Aktivitas Mendatang",
+        viewCalendar: "Lihat Kalender",
+        thActivity: "Aktivitas",
+        thCategory: "Kategori",
+        thStatus: "Status",
+        thStart: "Mulai",
+        thEnd: "Selesai",
+        thCreator: "Pembuat",
+        thAction: "Aksi",
+        thPreview: "Pratinjau Label",
+        searchPlaceholder: "Cari aktivitas...",
+        optAllCategory: "Semua Kategori",
+        optAllStatus: "Semua Status",
+        masterCategoryTitle: "Master Data Kategori",
+        masterCategoryDesc: "Kelola kelompok aktivitas & skema warna",
+        btnAddCategory: "Kategori",
+        masterStatusTitle: "Master Data Status",
+        masterStatusDesc: "Kelola state alur aktivitas & gaya badge",
+        btnAddStatus: "Status",
+        modalTitleCreate: "Buat Aktivitas Baru",
+        modalTitleEdit: "Edit Detail Aktivitas",
+        labelActivityName: "Nama Aktivitas",
+        activityPlaceholder: "Contoh: Sinkronisasi Data Master",
+        labelStart: "Mulai",
+        labelEnd: "Selesai",
+        labelColorPicker: "Warna Label Kalender",
+        labelColorHelp: "Pilih warna khusus atau gunakan skema bawaan kategori",
+        labelDesc: "Deskripsi & Catatan",
+        descPlaceholder: "Masukkan detail agenda rapat, catatan, lokasi, dsb.",
+        btnCancel: "Batal",
+        btnSave: "Simpan",
+        modalTitleAddCategory: "Tambah Kategori Baru",
+        modalTitleEditCategory: "Edit Kategori",
+        labelCategoryName: "Nama Kategori",
+        catNamePlaceholder: "Contoh: Rapat",
+        labelThemeColor: "Pilihan Warna Tema",
+        labelThemeColorHelp: "Menentukan warna kalender default",
+        btnSaveCategory: "Simpan Kategori",
+        modalTitleAddStatus: "Tambah Status Baru",
+        modalTitleEditStatus: "Edit Status",
+        labelStatusName: "Nama Status",
+        statusNamePlaceholder: "Contoh: Selesai",
+        labelBadgeColor: "Pilihan Warna Badge",
+        labelBadgeColorHelp: "Menentukan skema warna indikator tabel",
+        btnSaveStatus: "Simpan Status",
+        notifNoAgenda: "Tidak ada agenda mendatang di tahun ini.",
+        notifNoFilter: "Tidak ditemukan data aktivitas sesuai filter.",
+        spinnerLoadSys: "Memuat data sistem...",
+        spinnerSyncDb: "Menyinkronkan database lokal...",
+        spinnerSaveAct: "Menyimpan aktivitas ke penyimpanan browser...",
+        spinnerDelAct: "Menghapus aktivitas...",
+        spinnerProcCat: "Memproses data kategori...",
+        spinnerProcStat: "Memproses data status...",
+        alertValidDate: "Tanggal selesai harus setelah tanggal mulai!",
+        alertSuccessSave: "Aktivitas berhasil disimpan.",
+        alertSuccessDel: "Aktivitas berhasil dihapus.",
+        alertSuccessMaster: "Data berhasil disimpan.",
+        alertConnFailed: "Inisialisasi sistem gagal:",
+        alertSyncSuccess: "Sistem berhasil disinkronkan secara real-time.",
+        alertDeleteActConfirm: "Aktivitas akan dihapus permanen dari memori database lokal.",
+        alertDeleteCatConfirm: "Hapus kategori ini? Aktivitas yang berkaitan mungkin kehilangan gaya warna bawaan.",
+        alertDeleteStatConfirm: "Hapus status ini? Aktivitas yang menggunakan status ini akan kehilangan representasi badge warna.",
+        btnYesDelete: "Ya, Hapus!",
+        btnCancelAlert: "Batal",
+        btnExportXlsx: "Ekspor ke XLSX",
+        lblActiveStatus: "Status Keaktifan",
+        badgeActive: "Aktif",
+        badgeInactive: "Non-aktif",
+        sheetPanelTitle: "Koneksi Google Spreadsheet Database",
+        sheetPanelDesc: "Hubungkan standalone engine ini dengan Google Sheet pusat melalui Apps Script URL.",
+        uploadData: "Unggah Data Lokal",
+        downloadData: "Unduh Data Spreadsheet",
+        alertSavedUrl: "URL Spreadsheet berhasil disimpan!",
+        alertSyncSuccessRemote: "Database berhasil disinkronkan dengan Google Spreadsheet!",
+        alertSyncFailedRemote: "Gagal menghubungkan ke URL Web App Spreadsheet.",
+        alertNeedUrl: "Silakan masukkan URL Apps Script Web App yang valid terlebih dahulu.",
+        
+        // Pilihan Kolom Baru Translations
+        masterFieldTitle: "Atribut Dinamis (Kolom)",
+        masterFieldDesc: "Kelola atribut dinamis tambahan untuk formulir aktivitas",
+        btnAddField: "Kolom Baru",
+        thFieldName: "Nama Kolom",
+        thFieldType: "Tipe",
+        labelFieldName: "Nama Kolom / Atribut",
+        fieldNamePlaceholder: "Contoh: Lokasi / PJ",
+        labelFieldType: "Tipe Data",
+        labelFieldRequired: "Wajib diisi?",
+        modalTitleAddField: "Tambah Kolom Tambahan",
+        modalTitleEditField: "Edit Atribut Kolom",
+        spinnerProcField: "Memproses kolom tambahan...",
+        thRequired: "Wajib?",
+        labelRequiredYes: "Wajib",
+        labelRequiredNo: "Opsional",
+        alertDeleteFieldConfirm: "Hapus kolom kustom ini? Nilai terkait pada semua aktivitas akan dihapus dari memori."
+      },
+      en: {
+        navDashboard: "Analytical Dashboard",
+        navCalendar: "Interactive Calendar",
+        navRawData: "Data Management",
+        navMasterSetup: "Master Settings",
+        navCategoriesStatus: "Categories, Status & Fields",
+        userActiveLabel: "Local System:",
+        titleDashboard: "Analytical Dashboard",
+        titleCalendar: "Interactive Calendar",
+        titleRawData: "Activity Data Management",
+        titleMasterSettings: "Category, Status & Field Settings",
+        btnCreateActivity: "Create Activity",
+        statFiltered: "Filtered Activities",
+        statInProgress: "In Progress",
+        statCompleted: "Completed",
+        statPending: "Pending",
+        chartCategoryTitle: "Activities by Category",
+        chartStatusTitle: "Activity Status Distribution",
+        upcomingActivities: "Upcoming Activities",
+        viewCalendar: "View Calendar",
+        thActivity: "Activity",
+        thCategory: "Category",
+        thStatus: "Status",
+        thStart: "Start",
+        thEnd: "End",
+        thCreator: "Creator",
+        thAction: "Action",
+        thPreview: "Label Preview",
+        searchPlaceholder: "Search activities...",
+        optAllCategory: "All Categories",
+        optAllStatus: "All Statuses",
+        masterCategoryTitle: "Category Master Data",
+        masterCategoryDesc: "Manage activity groups & color schemes",
+        btnAddCategory: "Category",
+        masterStatusTitle: "Status Master Data",
+        masterStatusDesc: "Manage activity states & badge styles",
+        btnAddStatus: "Status",
+        modalTitleCreate: "Create New Activity",
+        modalTitleEdit: "Edit Activity Details",
+        labelActivityName: "Activity Name",
+        activityPlaceholder: "e.g., Master Data Synchronization",
+        labelStart: "Start",
+        labelEnd: "End",
+        labelColorPicker: "Calendar Label Color",
+        labelColorHelp: "Select a custom color or use the category's default",
+        labelDesc: "Description & Notes",
+        descPlaceholder: "Enter meeting agenda details, notes, location, etc.",
+        btnCancel: "Cancel",
+        btnSave: "Save",
+        modalTitleAddCategory: "Add New Category",
+        modalTitleEditCategory: "Edit Category",
+        labelCategoryName: "Category Name",
+        catNamePlaceholder: "e.g., Meeting",
+        labelThemeColor: "Theme Color Option",
+        labelThemeColorHelp: "Determines the default calendar color",
+        btnSaveCategory: "Save Category",
+        modalTitleAddStatus: "Add New Status",
+        modalTitleEditStatus: "Edit Status",
+        labelStatusName: "Status Name",
+        statusNamePlaceholder: "e.g., Done",
+        labelBadgeColor: "Badge Color Option",
+        labelBadgeColorHelp: "Determines the table indicator color scheme",
+        btnSaveStatus: "Save Status",
+        notifNoAgenda: "No upcoming agendas for this year.",
+        notifNoFilter: "No activity data found matching filters.",
+        spinnerLoadSys: "Loading system data...",
+        spinnerSyncDb: "Syncing local database...",
+        spinnerSaveAct: "Saving activity to browser storage...",
+        spinnerDelAct: "Deleting activity...",
+        spinnerProcCat: "Processing category data...",
+        spinnerProcStat: "Processing status data...",
+        alertValidDate: "End date must be after start date!",
+        alertSuccessSave: "Activity saved successfully.",
+        alertSuccessDel: "Activity deleted successfully.",
+        alertSuccessMaster: "Data saved successfully.",
+        alertConnFailed: "System initialization failed:",
+        alertSyncSuccess: "System successfully synchronized in real-time.",
+        alertDeleteActConfirm: "Activity will be permanently deleted from local database memory.",
+        alertDeleteCatConfirm: "Delete this category? Related activities may lose their default color styling.",
+        alertDeleteStatConfirm: "Delete this status? Activities using this status will lose their colored badge representation.",
+        btnYesDelete: "Yes, Delete!",
+        btnCancelAlert: "Cancel",
+        btnExportXlsx: "Export to XLSX",
+        lblActiveStatus: "Active Status",
+        badgeActive: "Active",
+        badgeInactive: "Inactive",
+        sheetPanelTitle: "Google Spreadsheet Database Connection",
+        sheetPanelDesc: "Connect this standalone engine with central Google Sheet via Apps Script URL.",
+        uploadData: "Upload Local Data",
+        downloadData: "Download Sheet Data",
+        alertSavedUrl: "Spreadsheet URL saved successfully!",
+        alertSyncSuccessRemote: "Database successfully synced with Google Spreadsheet!",
+        alertSyncFailedRemote: "Failed to connect to Spreadsheet Web App URL.",
+        alertNeedUrl: "Please input a valid Google Apps Script Web App URL first.",
+        
+        // Pilihan Kolom Baru Translations
+        masterFieldTitle: "Dynamic Attributes (Columns)",
+        masterFieldDesc: "Manage dynamic customized attributes for activity form",
+        btnAddField: "New Field",
+        thFieldName: "Column Name",
+        thFieldType: "Type",
+        labelFieldName: "Column / Attribute Name",
+        fieldNamePlaceholder: "e.g., Location / Supervisor",
+        labelFieldType: "Data Type",
+        labelFieldRequired: "Is field required?",
+        modalTitleAddField: "Add Custom Column",
+        modalTitleEditField: "Edit Attribute Column",
+        spinnerProcField: "Processing dynamic field...",
+        thRequired: "Required?",
+        labelRequiredYes: "Required",
+        labelRequiredNo: "Optional",
+        alertDeleteFieldConfirm: "Delete this custom column? Associated value in all activities will be cleared."
+      }
+    };
+
+    // =========================================================================
+    // LOCAL STORAGE DATABASE ENGINE (MOCK BACKEND)
+    // =========================================================================
+    const DB_ACTIVITIES_KEY = 'actiplan_local_activities';
+    const DB_CATEGORIES_KEY = 'actiplan_local_categories';
+    const DB_STATUS_KEY = 'actiplan_local_statuses';
+    const DB_FIELDS_KEY = 'actiplan_local_fields'; // Kunci tabel kolom kustom
+    const DB_SHEET_URL_KEY = 'actiplan_sheet_url';
+
+    const defaultCategories = [
+      { id: 'CAT-1', name: 'Kerja', color: '#4F46E5' },
+      { id: 'CAT-2', name: 'Rapat', color: '#06B6D4' },
+      { id: 'CAT-3', name: 'Pribadi', color: '#10B981' },
+      { id: 'CAT-4', name: 'Penting', color: '#EF4444' },
+      { id: 'CAT-5', name: 'Lainnya', color: '#64748B' }
+    ];
+
+    const defaultStatuses = [
+      { id: 'STAT-1', name: 'Pending', color: '#94A3B8' },
+      { id: 'STAT-2', name: 'In Progress', color: '#F59E0B' },
+      { id: 'STAT-3', name: 'Completed', color: '#10B981' },
+      { id: 'STAT-4', name: 'Cancelled', color: '#EF4444' }
+    ];
+
+    // Default kolom kustom tambahan
+    const defaultFields = [
+      { id: 'FLD-1', name: 'Lokasi', type: 'text', required: false },
+      { id: 'FLD-2', name: 'Penanggung Jawab', type: 'text', required: false }
+    ];
+
+    const defaultActivities = [
+      { id: 'ACT-1', title: 'Sinkronisasi Struktur Data Utama', startDateTime: '2026-06-25T09:00:00.000Z', endDateTime: '2026-06-25T11:00:00.000Z', category: 'Kerja', status: 'Completed', color: '#4F46E5', description: 'Evaluasi database skema lokal', createdBy: 'admin@actiplan.io', isActive: true, customFields: { 'FLD-1': 'Ruang Rapat Utama', 'FLD-2': 'Budi Santoso' } },
+      { id: 'ACT-2', title: 'Daily Standup Meeting Tim Dev', startDateTime: '2026-06-26T08:00:00.000Z', endDateTime: '2026-06-26T09:00:00.000Z', category: 'Rapat', status: 'In Progress', color: '#06B6D4', description: 'Review progress sprint mingguan', createdBy: 'developer@actiplan.io', isActive: true, customFields: { 'FLD-1': 'Google Meet / Zoom', 'FLD-2': 'Andi Wijaya' } },
+      { id: 'ACT-3', title: 'Pemeriksaan Kesehatan Berkala', startDateTime: '2026-06-28T14:00:00.000Z', endDateTime: '2026-06-28T15:30:00.000Z', category: 'Pribadi', status: 'Pending', color: '#10B981', description: 'Rutin tahunan di RS Medika', createdBy: 'admin@actiplan.io', isActive: true, customFields: { 'FLD-1': 'Klinik Medika Utama', 'FLD-2': 'Rinaawati' } },
+      { id: 'ACT-4', title: 'Peluncuran Fitur Standalone App', startDateTime: '2026-06-30T10:00:00.000Z', endDateTime: '2026-06-30T12:00:00.000Z', category: 'Penting', status: 'Pending', color: '#EF4444', description: 'Deployment final dan verifikasi unit test', createdBy: 'sistem@actiplan.io', isActive: false, customFields: { 'FLD-1': 'Server Utama / Cloud', 'FLD-2': 'DevOps Team' } }
+    ];
+
+    function seedDatabaseIfNeeded() {
+      if (!localStorage.getItem(DB_CATEGORIES_KEY)) {
+        localStorage.setItem(DB_CATEGORIES_KEY, JSON.stringify(defaultCategories));
+      }
+      if (!localStorage.getItem(DB_STATUS_KEY)) {
+        localStorage.setItem(DB_STATUS_KEY, JSON.stringify(defaultStatuses));
+      }
+      if (!localStorage.getItem(DB_FIELDS_KEY)) {
+        localStorage.setItem(DB_FIELDS_KEY, JSON.stringify(defaultFields));
+      }
+      if (!localStorage.getItem(DB_ACTIVITIES_KEY)) {
+        localStorage.setItem(DB_ACTIVITIES_KEY, JSON.stringify(defaultActivities));
+      }
+    }
+
+    const LocalDatabase = {
+      getBundleData: function() {
+        seedDatabaseIfNeeded();
+        return {
+          email: "admin@actiplan.io",
+          categories: JSON.parse(localStorage.getItem(DB_CATEGORIES_KEY)),
+          statuses: JSON.parse(localStorage.getItem(DB_STATUS_KEY)),
+          fields: JSON.parse(localStorage.getItem(DB_FIELDS_KEY)) || [],
+          activities: JSON.parse(localStorage.getItem(DB_ACTIVITIES_KEY))
+        };
+      },
+      saveActivities: function(data) {
+        localStorage.setItem(DB_ACTIVITIES_KEY, JSON.stringify(data));
+      },
+      saveCategories: function(data) {
+        localStorage.setItem(DB_CATEGORIES_KEY, JSON.stringify(data));
+      },
+      saveStatuses: function(data) {
+        localStorage.setItem(DB_STATUS_KEY, JSON.stringify(data));
+      },
+      saveFields: function(data) {
+        localStorage.setItem(DB_FIELDS_KEY, JSON.stringify(data));
+      }
+    };
+
+    // State Aplikasi Utama
+    let appActivities = [];
+    let appCategories = [];
+    let appStatuses = [];
+    let appFields = []; // Global Array untuk Dynamic Custom Columns
+    
+    let calendar = null;
+    let categoryChartInstance = null;
+    let statusChartInstance = null;
+    
+    let currentUserEmail = 'admin@actiplan.io';
+    let selectedYear = 'ALL';
+    let formIsActive = true; // State toggle keaktifan di dalam Modal CRUD
+
+    // State Tampilan & Lokalisasi
+    let currentLang = localStorage.getItem('actiplan_lang') || 'id';
+    let currentTheme = localStorage.getItem('actiplan_theme') || 'light';
+
+    window.addEventListener('DOMContentLoaded', () => {
+      seedDatabaseIfNeeded();
+      initApp();
+      applyTheme();
+      translateUI();
+      loadSavedSpreadsheetUrl();
+    });
+
+    /**
+     * Menerapkan Bright / Dark View sesuai preferensi state
+     */
+    function applyTheme() {
+      const htmlEl = document.documentElement;
+      const themeIcon = document.getElementById('theme-icon');
+      
+      if (currentTheme === 'dark') {
+        htmlEl.classList.add('dark');
+        themeIcon.className = 'fa-solid fa-sun text-amber-400';
+      } else {
+        htmlEl.classList.remove('dark');
+        themeIcon.className = 'fa-solid fa-moon text-slate-600';
+      }
+    }
+
+    /**
+     * Mengalihkan tema aplikasi (Bright <-> Dark)
+     */
+    function toggleTheme() {
+      currentTheme = (currentTheme === 'light') ? 'dark' : 'light';
+      localStorage.setItem('actiplan_theme', currentTheme);
+      applyTheme();
+      applyDataVisuals(); // Menghitung ulang visualisasi warna chart
+    }
+
+    /**
+     * Menerapkan bahasa terpilih ke seluruh elemen statis antarmuka
+     */
+    function translateUI() {
+      const dict = translations[currentLang];
+      document.getElementById('language-label').innerText = currentLang.toUpperCase();
+
+      // Terjemahkan elemen berdasarkan atribut data-i18n
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (dict[key]) {
+          el.innerText = dict[key];
+        }
+      });
+
+      // Terjemahkan placeholder berdasarkan data-i18n-placeholder
+      document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const key = el.getAttribute('data-i18n-placeholder');
+        if (dict[key]) {
+          el.setAttribute('placeholder', dict[key]);
+        }
+      });
+
+      // Update Judul Halaman dinamis secara real-time
+      const activeTab = document.querySelector('.nav-btn.bg-brand-600').id.replace('nav-', '');
+      updatePageTitle(activeTab);
+
+      // Re-render Calendar Locale secara dinamis
+      if (calendar) {
+        calendar.setOption('locale', currentLang);
+        calendar.setOption('buttonText', {
+          today: currentLang === 'id' ? 'Hari Ini' : 'Today',
+          month: currentLang === 'id' ? 'Bulan' : 'Month',
+          week: currentLang === 'id' ? 'Minggu' : 'Week',
+          day: currentLang === 'id' ? 'Hari' : 'Day'
+        });
+      }
+    }
+
+    function toggleLanguage() {
+      currentLang = (currentLang === 'id') ? 'en' : 'id';
+      localStorage.setItem('actiplan_lang', currentLang);
+      translateUI();
+      applyDataVisuals();
+    }
+
+    function updatePageTitle(tabName) {
+      const dict = translations[currentLang];
+      const titleMap = {
+        'dashboard': dict.titleDashboard,
+        'calendar': dict.titleCalendar,
+        'rawdata': dict.titleRawData,
+        'master-settings': dict.titleMasterSettings
+      };
+      document.getElementById('page-title').innerText = titleMap[tabName] || dict.titleDashboard;
+    }
+
+    /**
+     * Inisialisasi awal seluruh aplikasi (Instant Local Load)
+     */
+    function initApp() {
+      showLoading(translations[currentLang].spinnerLoadSys);
+      initCalendar();
+
+      setTimeout(() => {
+        try {
+          const bundle = LocalDatabase.getBundleData();
+          currentUserEmail = bundle.email;
+          document.getElementById('user-email').innerText = bundle.email;
+          document.getElementById('user-initial').innerText = bundle.email.charAt(0).toUpperCase();
+
+          appCategories = bundle.categories;
+          appStatuses = bundle.statuses;
+          appFields = bundle.fields || [];
+          appActivities = bundle.activities;
+
+          buildDropdownFilters();
+          buildYearFilterOptions();
+          applyDataVisuals();
+
+          hideLoading();
+        } catch(e) {
+          hideLoading();
+          Swal.fire('Error', e.message, 'error');
+        }
+      }, 600); // Simulasi delay asinkron agar interface terasa hidup
+    }
+
+    /**
+     * Menyegarkan visualisasi data secara asinkron (Membangun ulang struktur UI)
+     */
+    function refreshData(showNotif = false) {
+      showLoading(translations[currentLang].spinnerSyncDb);
+      const refreshIcon = document.getElementById('refresh-icon');
+      refreshIcon.classList.add('fa-spin');
+
+      setTimeout(() => {
+        const bundle = LocalDatabase.getBundleData();
+        appCategories = bundle.categories;
+        appStatuses = bundle.statuses;
+        appFields = bundle.fields || [];
+        appActivities = bundle.activities;
+
+        buildDropdownFilters();
+        buildYearFilterOptions();
+        applyDataVisuals();
+
+        hideLoading();
+        refreshIcon.classList.remove('fa-spin');
+
+        if (showNotif) {
+          Swal.fire({
+            icon: 'success',
+            title: currentLang === 'id' ? 'Sinkronisasi' : 'Synchronized',
+            text: translations[currentLang].alertSyncSuccess,
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 2000
+          });
+        }
+      }, 500);
+    }
+
+    function buildDropdownFilters() {
+      const formCat = document.getElementById('form-category');
+      formCat.innerHTML = '';
+      appCategories.forEach(c => {
+        formCat.innerHTML += `<option value="${c.name}">${c.name}</option>`;
+      });
+
+      const formStat = document.getElementById('form-status');
+      formStat.innerHTML = '';
+      appStatuses.forEach(s => {
+        formStat.innerHTML += `<option value="${s.name}">${s.name}</option>`;
+      });
+
+      const filterCat = document.getElementById('filter-category');
+      const curCatVal = filterCat.value;
+      filterCat.innerHTML = `<option value="">${translations[currentLang].optAllCategory}</option>`;
+      appCategories.forEach(c => {
+        filterCat.innerHTML += `<option value="${c.name}">${c.name}</option>`;
+      });
+      filterCat.value = curCatVal;
+
+      const filterStat = document.getElementById('filter-status');
+      const curStatVal = filterStat.value;
+      filterStat.innerHTML = `<option value="">${translations[currentLang].optAllStatus}</option>`;
+      appStatuses.forEach(s => {
+        filterStat.innerHTML += `<option value="${s.name}">${s.name}</option>`;
+      });
+      filterStat.value = curStatVal;
+    }
+
+    function buildYearFilterOptions() {
+      const yearFilter = document.getElementById('global-year-filter');
+      const currentVal = yearFilter.value;
+      
+      const yearsSet = new Set();
+      yearsSet.add(new Date().getFullYear());
+      
+      appActivities.forEach(act => {
+        if (act.startDateTime) {
+          const year = new Date(act.startDateTime).getFullYear();
+          if (!isNaN(year)) yearsSet.add(year);
+        }
+      });
+
+      const sortedYears = Array.from(yearsSet).sort((a, b) => b - a);
+      yearFilter.innerHTML = `<option value="ALL">${currentLang === 'id' ? 'Semua' : 'All'}</option>`;
+      sortedYears.forEach(year => {
+        yearFilter.innerHTML += `<option value="${year}">${year}</option>`;
+      });
+
+      if (Array.from(yearsSet).map(String).includes(currentVal) || currentVal === 'ALL') {
+        yearFilter.value = currentVal;
+        selectedYear = currentVal;
+      } else {
+        yearFilter.value = 'ALL';
+        selectedYear = 'ALL';
+      }
+    }
+
+    function handleYearChange() {
+      const yearFilter = document.getElementById('global-year-filter');
+      selectedYear = yearFilter.value;
+      
+      applyDataVisuals();
+
+      if (selectedYear !== 'ALL' && calendar) {
+        calendar.gotoDate(`${selectedYear}-01-01`);
+      }
+    }
+
+    function getFilteredActivities() {
+      if (selectedYear === 'ALL') return appActivities;
+      return appActivities.filter(act => {
+        if (!act.startDateTime) return false;
+        return new Date(act.startDateTime).getFullYear().toString() === selectedYear;
+      });
+    }
+
+    function applyDataVisuals() {
+      const filteredData = getFilteredActivities();
+      updateDashboardStats(filteredData);
+      updateCalendarEvents(filteredData);
+      updateRawDataTable(filteredData);
+      updateMasterDataTables();
+    }
+
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('bg-brand-600', 'text-white', 'shadow-md', 'shadow-brand-600/10');
+        btn.classList.add('text-slate-400', 'hover:bg-slate-800/50', 'hover:text-white');
+      });
+
+      document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+      
+      const activeBtn = document.getElementById(`nav-${tabName}`);
+      activeBtn.classList.remove('text-slate-400', 'hover:bg-slate-800/50', 'hover:text-white');
+      activeBtn.classList.add('bg-brand-600', 'text-white', 'shadow-md', 'shadow-brand-600/10');
+
+      updatePageTitle(tabName);
+
+      if (tabName === 'calendar' && calendar) {
+        setTimeout(() => calendar.updateSize(), 50);
+      }
+    }
+
+    function formatBeautifulDate(isoString, includeTime = true) {
+      if (!isoString) return '-';
+      const options = { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' };
+      if (includeTime) {
+        options.hour = '2-digit';
+        options.minute = '2-digit';
+      }
+      return new Date(isoString).toLocaleString(currentLang === 'id' ? 'id-ID' : 'en-US', options);
+    }
+
+    function formatToDateTimeLocal(isoString) {
+      if (!isoString) return '';
+      const d = new Date(isoString);
+      const offset = d.getTimezoneOffset() * 60000;
+      return (new Date(d.getTime() - offset)).toISOString().slice(0, 16);
+    }
+
+    function getStatusBadge(statusName) {
+      const match = appStatuses.find(s => s.name.toLowerCase() === (statusName || '').toLowerCase());
+      const color = match ? match.color : '#64748b';
+      return `
+        <span class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold ring-1 ring-inset" style="background-color: ${color}12; color: ${color}; ring-color: ${color}25">
+          <span class="h-1.5 w-1.5 rounded-full" style="background-color: ${color}"></span>
+          ${statusName || 'Pending'}
+        </span>
+      `;
+    }
+
+    /**
+     * Membuat indikator badge keaktifan interaktif (Active / Inactive Switch Button)
+     */
+    function getActiveStateBadge(isActive, actId) {
+      const colorClass = isActive ? 'bg-emerald-500 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-500';
+      const label = isActive ? translations[currentLang].badgeActive : translations[currentLang].badgeInactive;
+      return `
+        <button onclick="toggleActivityStateQuick('${actId}')" class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-full transition-all duration-200 hover:opacity-85 ${colorClass}">
+          <i class="fa-solid ${isActive ? 'fa-circle-check' : 'fa-circle-minus'} text-[10px]"></i>
+          <span>${label}</span>
+        </button>
+      `;
+    }
+
+    function updateDashboardStats(filteredData) {
+      const total = filteredData.length;
+      const pending = filteredData.filter(a => (a.status || '').toLowerCase() === 'pending').length;
+      const inProgress = filteredData.filter(a => (a.status || '').toLowerCase() === 'in progress' || (a.status || '').toLowerCase() === 'inprogress').length;
+      const completed = filteredData.filter(a => (a.status || '').toLowerCase() === 'completed' || (a.status || '').toLowerCase() === 'selesai').length;
+
+      document.getElementById('stat-total').innerText = total;
+      document.getElementById('stat-progress').innerText = inProgress;
+      document.getElementById('stat-completed').innerText = completed;
+      document.getElementById('stat-pending').innerText = pending;
+
+      const listContainer = document.getElementById('recent-activities-list');
+      listContainer.innerHTML = '';
+      
+      const sortedFuture = [...filteredData]
+        .filter(a => new Date(a.startDateTime) >= new Date() && a.isActive !== false)
+        .sort((a, b) => new Date(a.startDateTime) - new Date(b.startDateTime))
+        .slice(0, 5);
+
+      if (sortedFuture.length === 0) {
+        listContainer.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-400 dark:text-slate-500 italic">${translations[currentLang].notifNoAgenda}</td></tr>`;
+      } else {
+        sortedFuture.forEach(act => {
+          const tr = document.createElement('tr');
+          tr.className = "hover:bg-slate-50 dark:hover:bg-slate-800/40 transition cursor-pointer border-b border-slate-100 dark:border-slate-800/60";
+          tr.onclick = () => openEditModal(act);
+          tr.innerHTML = `
+            <td class="py-3 px-4 font-semibold text-slate-800 dark:text-slate-200">${act.title}</td>
+            <td class="py-3 px-4">
+              <span class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium" style="background-color: ${act.color}15; color: ${act.color}">
+                ${act.category || 'Lainnya'}
+              </span>
+            </td>
+            <td class="py-3 px-4">${getStatusBadge(act.status)}</td>
+            <td class="py-3 px-4 text-xs font-mono text-slate-500 dark:text-slate-400">${formatBeautifulDate(act.startDateTime)}</td>
+            <td class="py-3 px-4 text-xs font-mono text-slate-500 dark:text-slate-400">${formatBeautifulDate(act.endDateTime)}</td>
+          `;
+          listContainer.appendChild(tr);
+        });
+      }
+
+      renderCharts(filteredData);
+    }
+
+    // =========================================================================
+    // CHART.JS INTEGRATION
+    // =========================================================================
+    const doughnutValueLabelsPlugin = {
+      id: 'doughnutValueLabels',
+      afterDraw(chart) {
+        const { ctx, data } = chart;
+        ctx.save();
+        chart.data.datasets.forEach((dataset, datasetIndex) => {
+          const meta = chart.getDatasetMeta(datasetIndex);
+          meta.data.forEach((element, index) => {
+            const value = dataset.data[index];
+            if (value > 0 && chart.data.labels[index] !== 'Belum Ada Data' && chart.data.labels[index] !== 'No Data Available') {
+              const { x, y, startAngle, endAngle, outerRadius, innerRadius } = element;
+              const angle = startAngle + (endAngle - startAngle) / 2;
+              const middleRadius = innerRadius + (outerRadius - innerRadius) / 2;
+              
+              const textX = x + Math.cos(angle) * middleRadius;
+              const textY = y + Math.sin(angle) * middleRadius;
+              
+              ctx.fillStyle = '#ffffff';
+              ctx.font = 'bold 12px sans-serif';
+              ctx.shadowColor = 'rgba(0,0,0,0.4)';
+              ctx.shadowBlur = 4;
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText(value, textX, textY);
+            }
+          });
+        });
+        ctx.restore();
+      }
+    };
+
+    const barValueLabelsPlugin = {
+      id: 'barValueLabels',
+      afterDraw(chart) {
+        const { ctx, data } = chart;
+        ctx.save();
+        chart.data.datasets.forEach((dataset, datasetIndex) => {
+          const meta = chart.getDatasetMeta(datasetIndex);
+          meta.data.forEach((bar, index) => {
+            const value = dataset.data[index];
+            if (value > 0) {
+              const { x, y } = bar;
+              ctx.fillStyle = currentTheme === 'dark' ? '#f1f5f9' : '#1e293b';
+              ctx.font = 'bold 12px sans-serif';
+              ctx.shadowBlur = 0;
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'bottom';
+              ctx.fillText(value, x, y - 5);
+            }
+          });
+        });
+        ctx.restore();
+      }
+    };
+
+    function renderCharts(filteredData) {
+      const isDark = currentTheme === 'dark';
+      const textLabelColor = isDark ? '#cbd5e1' : '#475569';
+      const gridLineColor = isDark ? '#334155' : '#f1f5f9';
+
+      const catCtx = document.getElementById('categoryChart').getContext('2d');
+      if (categoryChartInstance) categoryChartInstance.destroy();
+
+      const catMap = {};
+      appCategories.forEach(c => catMap[c.name] = 0);
+      filteredData.forEach(act => {
+        const name = act.category || 'Lainnya';
+        catMap[name] = (catMap[name] || 0) + 1;
+      });
+
+      const catLabels = Object.keys(catMap).filter(k => catMap[k] > 0);
+      const catCounts = catLabels.map(k => catMap[k]);
+      const catColors = catLabels.map(k => {
+        const match = appCategories.find(c => c.name === k);
+        return match ? match.color : '#64748b';
+      });
+
+      categoryChartInstance = new Chart(catCtx, {
+        type: 'doughnut',
+        data: {
+          labels: catLabels.length ? catLabels : [currentLang === 'id' ? 'Belum Ada Data' : 'No Data Available'],
+          datasets: [{
+            data: catCounts.length ? catCounts : [0],
+            backgroundColor: catColors.length ? catColors : ['#cbd5e1'],
+            borderWidth: 2,
+            borderColor: isDark ? '#0f172a' : '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { 
+              position: 'bottom', 
+              labels: { 
+                boxWidth: 10, 
+                usePointStyle: true, 
+                padding: 12,
+                color: textLabelColor
+              } 
+            }
+          },
+          cutout: '70%'
+        },
+        plugins: [doughnutValueLabelsPlugin]
+      });
+
+      const statCtx = document.getElementById('statusChart').getContext('2d');
+      if (statusChartInstance) statusChartInstance.destroy();
+
+      const statMap = {};
+      appStatuses.forEach(s => statMap[s.name] = 0);
+      filteredData.forEach(act => {
+        const name = act.status || 'Pending';
+        if (statMap[name] !== undefined) statMap[name]++;
+      });
+
+      const statColors = appStatuses.map(s => s.color);
+
+      statusChartInstance = new Chart(statCtx, {
+        type: 'bar',
+        data: {
+          labels: Object.keys(statMap),
+          datasets: [{
+            label: currentLang === 'id' ? 'Aktivitas' : 'Activities',
+            data: Object.values(statMap),
+            backgroundColor: statColors,
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: { 
+            y: { 
+              beginAtZero: true, 
+              ticks: { stepSize: 1, color: textLabelColor },
+              grid: { color: gridLineColor }
+            },
+            x: {
+              ticks: { color: textLabelColor },
+              grid: { color: gridLineColor }
+            }
+          },
+          plugins: { legend: { display: false } }
+        },
+        plugins: [barValueLabelsPlugin]
+      });
+    }
+
+    // =========================================================================
+    // CALENDAR INITIALIZATION & UPDATE
+    // =========================================================================
+    function initCalendar() {
+      const calendarEl = document.getElementById('calendar-container');
+      if (!calendarEl) return;
+      
+      calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        headerToolbar: {
+          left: 'prev,next today',
+          center: 'title',
+          right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
+        },
+        locale: currentLang,
+        themeSystem: 'standard',
+        editable: true,
+        selectable: true,
+        dayMaxEvents: true,
+        events: [],
+        eventClick: function(info) {
+          openEditModalById(info.event.id);
+        },
+        dateClick: function(info) {
+          openAddModal();
+          document.getElementById('form-start').value = formatToDateTimeLocal(info.dateStr + 'T09:00:00');
+          document.getElementById('form-end').value = formatToDateTimeLocal(info.dateStr + 'T10:00:00');
+        }
+      });
+      calendar.render();
+    }
+
+    function updateCalendarEvents(filteredData) {
+      if (!calendar) return;
+      calendar.removeAllEvents();
+      
+      filteredData.forEach(act => {
+        if (!act.startDateTime || !act.endDateTime) return; // Mencegah crash jika data sheet korup/kosong
+        const isAct = act.isActive !== false;
+        calendar.addEvent({
+          id: act.id,
+          title: act.title,
+          start: act.startDateTime,
+          end: act.endDateTime,
+          color: isAct ? (act.color || '#4f46e5') : '#94a3b890',
+          description: act.description,
+          classNames: isAct ? [] : ['opacity-60', 'line-through'],
+          extendedProps: {
+            category: act.category,
+            status: act.status
+          }
+        });
+      });
+    }
+
+    /**
+     * Membangun Header Tabel secara Dinamis berdasarkan Kolom Kustom (Fields CRUD)
+     */
+    function buildRawDataTableHeaders() {
+      const thead = document.querySelector('#tab-rawdata table thead');
+      if (!thead) return;
+      
+      const dict = translations[currentLang];
+      
+      let headerHTML = `
+        <tr>
+          <th class="py-4 px-6">${dict.thActivity}</th>
+          <th class="py-4 px-4">${dict.thCategory}</th>
+          <th class="py-4 px-4">${dict.thStatus}</th>
+          <th class="py-4 px-4">${dict.lblActiveStatus}</th>
+          <th class="py-4 px-4">${dict.thStart}</th>
+          <th class="py-4 px-4">${dict.thEnd}</th>
+      `;
+      
+      appFields.forEach(f => {
+        headerHTML += `<th class="py-4 px-4 text-slate-500 dark:text-slate-300 font-semibold">${f.name}</th>`;
+      });
+      
+      headerHTML += `
+          <th class="py-4 px-6 text-right">${dict.thAction}</th>
+        </tr>
+      `;
+      thead.innerHTML = headerHTML;
+    }
+
+    function updateRawDataTable(filteredData) {
+      buildRawDataTableHeaders();
+
+      const tbody = document.getElementById('raw-data-table');
+      tbody.innerHTML = '';
+
+      if (filteredData.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${7 + appFields.length}" class="py-12 text-center text-slate-400 dark:text-slate-500 italic">${translations[currentLang].notifNoFilter}</td></tr>`;
+        return;
+      }
+
+      filteredData.forEach(act => {
+        const tr = document.createElement('tr');
+        const isAct = act.isActive !== false;
+        
+        tr.className = `hover:bg-slate-50 dark:hover:bg-slate-800/40 transition border-b border-slate-100 dark:border-slate-800 ${isAct ? '' : 'opacity-65'}`;
+        
+        let customFieldsHTML = '';
+        appFields.forEach(f => {
+          const val = (act.customFields && act.customFields[f.id]) ? act.customFields[f.id] : '-';
+          customFieldsHTML += `<td class="py-4 px-4 text-xs font-semibold text-slate-600 dark:text-slate-400 max-w-[150px] truncate" title="${val}">${val}</td>`;
+        });
+
+        tr.innerHTML = `
+          <td class="py-4 px-6 font-semibold">
+            <div class="max-w-xs truncate text-slate-800 dark:text-slate-200 ${isAct ? '' : 'line-through text-slate-400'}" title="${act.title}">${act.title}</div>
+            <div class="text-xs text-slate-400 dark:text-slate-500 max-w-xs truncate font-normal mt-0.5">${act.description || '-'}</div>
+          </td>
+          <td class="py-4 px-4">
+            <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-semibold" style="background-color: ${act.color}15; color: ${act.color}">
+              ${act.category || 'Lainnya'}
+            </span>
+          </td>
+          <td class="py-4 px-4">${getStatusBadge(act.status)}</td>
+          <td class="py-4 px-4">${getActiveStateBadge(isAct, act.id)}</td>
+          <td class="py-4 px-4 text-xs font-mono text-slate-500 dark:text-slate-400">${formatBeautifulDate(act.startDateTime)}</td>
+          <td class="py-4 px-4 text-xs font-mono text-slate-500 dark:text-slate-400">${formatBeautifulDate(act.endDateTime)}</td>
+          ${customFieldsHTML}
+          <td class="py-4 px-6 text-right whitespace-nowrap">
+            <button onclick="openEditModalById('${act.id}')" class="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-brand-50 dark:hover:bg-brand-950/40 hover:text-brand-600 dark:hover:text-brand-400 transition mr-1" title="Edit">
+              <i class="fa-solid fa-pen-to-square"></i>
+            </button>
+            <button onclick="confirmDeleteActivity('${act.id}')" class="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 dark:hover:text-rose-400 transition" title="Hapus">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function filterRawData() {
+      const query = document.getElementById('search-input').value.toLowerCase();
+      const catVal = document.getElementById('filter-category').value;
+      const statVal = document.getElementById('filter-status').value;
+
+      const baseData = getFilteredActivities();
+
+      const filtered = baseData.filter(act => {
+        const matchesQuery = act.title.toLowerCase().includes(query) || (act.description || '').toLowerCase().includes(query);
+        const matchesCat = catVal === '' || act.category === catVal;
+        const matchesStat = statVal === '' || (act.status || '').toLowerCase() === statVal.toLowerCase();
+
+        return matchesQuery && matchesCat && matchesStat;
+      });
+
+      updateRawDataTable(filtered);
+    }
+
+    function updateMasterDataTables() {
+      // 1. Kategori
+      const catTbody = document.getElementById('master-categories-table');
+      catTbody.innerHTML = '';
+      appCategories.forEach(c => {
+        const tr = document.createElement('tr');
+        tr.className = "border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-800/20";
+        tr.innerHTML = `
+          <td class="py-3 font-semibold text-slate-800 dark:text-slate-200">${c.name}</td>
+          <td class="py-3">
+            <span class="inline-flex items-center rounded-md px-2.5 py-1 text-xs font-medium" style="background-color: ${c.color}20; color: ${c.color}">
+              <i class="fa-solid fa-tag mr-1.5 text-[9px]"></i> ${c.name}
+            </span>
+          </td>
+          <td class="py-3 text-right whitespace-nowrap">
+            <button onclick="openEditCategory('${c.id}', '${c.name}', '${c.color}')" class="h-7 w-7 rounded-md border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition mr-1"><i class="fa-solid fa-pen text-xs"></i></button>
+            <button onclick="confirmDeleteCategory('${c.id}', '${c.name}')" class="h-7 w-7 rounded-md border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition"><i class="fa-solid fa-trash text-xs"></i></button>
+          </td>
+        `;
+        catTbody.appendChild(tr);
+      });
+
+      // 2. Status
+      const statTbody = document.getElementById('master-statuses-table');
+      statTbody.innerHTML = '';
+      appStatuses.forEach(s => {
+        const tr = document.createElement('tr');
+        tr.className = "border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-800/20";
+        tr.innerHTML = `
+          <td class="py-3 font-semibold text-slate-800 dark:text-slate-200">${s.name}</td>
+          <td class="py-3">
+            ${getStatusBadge(s.name)}
+          </td>
+          <td class="py-3 text-right whitespace-nowrap">
+            <button onclick="openEditStatus('${s.id}', '${s.name}', '${s.color}')" class="h-7 w-7 rounded-md border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-sky-600 dark:hover:text-sky-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition mr-1"><i class="fa-solid fa-pen text-xs"></i></button>
+            <button onclick="confirmDeleteStatus('${s.id}', '${s.name}')" class="h-7 w-7 rounded-md border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition"><i class="fa-solid fa-trash text-xs"></i></button>
+          </td>
+        `;
+        statTbody.appendChild(tr);
+      });
+
+      // 3. Kolom Tambahan (Fields)
+      const fieldTbody = document.getElementById('master-fields-table');
+      fieldTbody.innerHTML = '';
+      appFields.forEach(f => {
+        const tr = document.createElement('tr');
+        tr.className = "border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-800/20";
+        
+        const typeLabels = { text: 'Text / String', number: 'Number / Angka', date: 'Date / Tanggal' };
+        const typeBadgeColors = { text: 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400', number: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400', date: 'bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400' };
+        const typeColor = typeBadgeColors[f.type] || 'bg-slate-100 text-slate-700';
+        
+        const reqBadge = f.required 
+          ? `<span class="inline-flex items-center rounded-md bg-rose-50 dark:bg-rose-950/30 px-2 py-0.5 text-xs font-semibold text-rose-700 dark:text-rose-400">${translations[currentLang].labelRequiredYes}</span>`
+          : `<span class="inline-flex items-center rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-xs font-medium text-slate-600 dark:text-slate-400">${translations[currentLang].labelRequiredNo}</span>`;
+
+        tr.innerHTML = `
+          <td class="py-3 font-semibold text-slate-800 dark:text-slate-200">${f.name}</td>
+          <td class="py-3">
+            <span class="inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-semibold ${typeColor}">
+              ${typeLabels[f.type] || f.type}
+            </span>
+          </td>
+          <td class="py-3">${reqBadge}</td>
+          <td class="py-3 text-right whitespace-nowrap">
+            <button onclick="openEditField('${f.id}', '${f.name}', '${f.type}', ${f.required})" class="h-7 w-7 rounded-md border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition mr-1"><i class="fa-solid fa-pen text-xs"></i></button>
+            <button onclick="confirmDeleteField('${f.id}', '${f.name}')" class="h-7 w-7 rounded-md border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition"><i class="fa-solid fa-trash text-xs"></i></button>
+          </td>
+        `;
+        fieldTbody.appendChild(tr);
+      });
+    }
+
+    /**
+     * Membangun Form Dinamis kustom di dalam Modal Aktivitas
+     */
+    function renderDynamicFieldsInForm(act = null) {
+      const container = document.getElementById('dynamic-fields-container');
+      container.innerHTML = '';
+
+      if (appFields.length === 0) {
+        container.classList.add('hidden');
+        return;
+      }
+      container.classList.remove('hidden');
+
+      appFields.forEach(f => {
+        const val = (act && act.customFields && act.customFields[f.id]) ? act.customFields[f.id] : '';
+        const requiredAttr = f.required ? 'required' : '';
+        
+        let inputType = 'text';
+        if (f.type === 'number') inputType = 'number';
+        if (f.type === 'date') inputType = 'date';
+
+        container.innerHTML += `
+          <div>
+            <label for="custom-field-${f.id}" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              ${f.name} ${f.required ? '<span class="text-rose-500">*</span>' : ''}
+            </label>
+            <input type="${inputType}" 
+                   id="custom-field-${f.id}" 
+                   value="${val}"
+                   ${requiredAttr} 
+                   class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white px-4 py-2.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 transition-all">
+          </div>
+        `;
+      });
+    }
+
+    function autoAssignColor() {
+      const categoryName = document.getElementById('form-category').value;
+      const colorPicker = document.getElementById('form-color');
+      const match = appCategories.find(c => c.name === categoryName);
+      if (match) {
+        colorPicker.value = match.color;
+      }
+    }
+
+    /**
+     * sinkronisasi UI untuk status keaktifan di Form Modal (Aktif / Non-aktif)
+     */
+    function updateFormActiveToggleUI() {
+      const toggleBtn = document.getElementById('form-active-toggle');
+      const toggleCircle = document.getElementById('form-active-circle');
+      const descText = document.getElementById('form-active-desc');
+
+      if (formIsActive) {
+        toggleBtn.classList.remove('bg-slate-300', 'dark:bg-slate-700');
+        toggleBtn.classList.add('bg-brand-600');
+        toggleCircle.className = "translate-x-5 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out";
+        descText.innerText = currentLang === 'id' ? 'Aktivitas ini aktif dan tampil di dasbor.' : 'This activity is active and visible on dashboard.';
+      } else {
+        toggleBtn.classList.remove('bg-brand-600');
+        toggleBtn.classList.add('bg-slate-300', 'dark:bg-slate-700');
+        toggleCircle.className = "translate-x-0 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out";
+        descText.innerText = currentLang === 'id' ? 'Aktivitas dinonaktifkan (redup & coret di tabel data).' : 'Activity disabled (faded & crossed in tables).';
+      }
+    }
+
+    function toggleFormActiveState() {
+      formIsActive = !formIsActive;
+      updateFormActiveToggleUI();
+    }
+
+    /**
+     * Mengubah keaktifan langsung dari baris tabel
+     */
+    function toggleActivityStateQuick(actId) {
+      let activities = JSON.parse(localStorage.getItem(DB_ACTIVITIES_KEY)) || [];
+      activities = activities.map(act => {
+        if (act.id === actId) {
+          const newState = !(act.isActive !== false);
+          
+          Swal.fire({
+            icon: 'info',
+            title: currentLang === 'id' ? 'Keaktifan Berubah' : 'Status Toggled',
+            text: `"${act.title}" -> ${newState ? translations[currentLang].badgeActive : translations[currentLang].badgeInactive}`,
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 2000
+          });
+
+          return { ...act, isActive: newState };
+        }
+        return act;
+      });
+
+      LocalDatabase.saveActivities(activities);
+      refreshData();
+    }
+
+    function openAddModal() {
+      document.getElementById('activity-form').reset();
+      document.getElementById('form-id').value = '';
+      document.getElementById('modal-title').innerText = translations[currentLang].modalTitleCreate;
+      
+      const now = new Date();
+      document.getElementById('form-start').value = formatToDateTimeLocal(now.toISOString());
+      document.getElementById('form-end').value = formatToDateTimeLocal(new Date(now.getTime() + 3600000).toISOString());
+      
+      formIsActive = true;
+      updateFormActiveToggleUI();
+      renderDynamicFieldsInForm(null);
+      autoAssignColor();
+      
+      const modal = document.getElementById('activity-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function openEditModalById(id) {
+      const act = appActivities.find(a => a.id === id);
+      if (act) openEditModal(act);
+    }
+
+    function openEditModal(act) {
+      document.getElementById('activity-form').reset();
+      document.getElementById('modal-title').innerText = translations[currentLang].modalTitleEdit;
+      
+      document.getElementById('form-id').value = act.id;
+      document.getElementById('form-title').value = act.title;
+      document.getElementById('form-start').value = formatToDateTimeLocal(act.startDateTime);
+      document.getElementById('form-end').value = formatToDateTimeLocal(act.endDateTime);
+      document.getElementById('form-category').value = act.category;
+      document.getElementById('form-status').value = act.status;
+      document.getElementById('form-color').value = act.color || '#4f46e5';
+      document.getElementById('form-description').value = act.description || '';
+
+      formIsActive = act.isActive !== false;
+      updateFormActiveToggleUI();
+      renderDynamicFieldsInForm(act);
+
+      const modal = document.getElementById('activity-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeActivityModal() {
+      const modal = document.getElementById('activity-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('-translate-x-full');
+    }
+
+    // =========================================================================
+    // EXPORT TO EXCEL IMPLEMENTATION (xlsx) - DIOPTIMALKAN UNTUK KOLOM DINAMIS
+    // =========================================================================
+    function exportToExcel() {
+      const filtered = getFilteredActivities();
+      if (filtered.length === 0) {
+        Swal.fire({
+          icon: 'warning',
+          title: currentLang === 'id' ? 'Ekspor Gagal' : 'Export Failed',
+          text: translations[currentLang].notifNoFilter
+        });
+        return;
+      }
+
+      const xlsxData = filtered.map(act => {
+        const rowData = {
+          'Activity ID': act.id,
+          'Title / Agenda': act.title,
+          'Category': act.category || '-',
+          'Status': act.status || 'Pending',
+          'Is Active': (act.isActive !== false) ? 'YES / AKTIF' : 'NO / NON-AKTIF',
+          'Start Date & Time': formatBeautifulDate(act.startDateTime, true),
+          'End Date & Time': formatBeautifulDate(act.endDateTime, true),
+          'Creator': act.createdBy || 'Unknown',
+          'Notes / Details': act.description || '-'
+        };
+
+        appFields.forEach(f => {
+          rowData[f.name] = (act.customFields && act.customFields[f.id]) ? act.customFields[f.id] : '-';
+        });
+
+        return rowData;
+      });
+
+      const worksheet = XLSX.utils.json_to_sheet(xlsxData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Activities List");
+
+      const max_width = xlsxData.reduce((w, r) => Math.max(w, r['Title / Agenda'].length), 15);
+      
+      const colsWidth = [ 
+        { wch: 15 }, { wch: max_width }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 25 }, { wch: 25 }, { wch: 20 }, { wch: 30 } 
+      ];
+      appFields.forEach(() => {
+        colsWidth.push({ wch: 20 });
+      });
+
+      worksheet["!cols"] = colsWidth;
+
+      const dateTag = new Date().toISOString().split('T')[0];
+      XLSX.writeFile(workbook, `ActiPlan_Report_${dateTag}.xlsx`);
+      
+      Swal.fire({
+        icon: 'success',
+        title: currentLang === 'id' ? 'Ekspor Berhasil' : 'Exported',
+        text: currentLang === 'id' ? 'File Excel (.xlsx) siap diunduh!' : 'Excel document (.xlsx) download started!',
+        timer: 1500,
+        showConfirmButton: false
+      });
+    }
+
+    // =========================================================================
+    // GOOGLE SPREADSHEET DATABASE INTEGRATION
+    // =========================================================================
+    function loadSavedSpreadsheetUrl() {
+      const savedUrl = localStorage.getItem(DB_SHEET_URL_KEY) || '';
+      document.getElementById('spreadsheet-url-input').value = savedUrl;
+    }
+
+    function saveSpreadsheetUrl() {
+      const url = document.getElementById('spreadsheet-url-input').value.trim();
+      localStorage.setItem(DB_SHEET_URL_KEY, url);
+      
+      Swal.fire({
+        icon: 'success',
+        title: currentLang === 'id' ? 'Tersimpan' : 'Saved',
+        text: translations[currentLang].alertSavedUrl,
+        timer: 1500,
+        showConfirmButton: false
+      });
+    }
+
+    function uploadLocalData() {
+      const url = localStorage.getItem(DB_SHEET_URL_KEY);
+      if (!url) {
+        Swal.fire({
+          icon: 'warning',
+          title: currentLang === 'id' ? 'Butuh URL' : 'URL Required',
+          text: translations[currentLang].alertNeedUrl
+        });
+        return;
+      }
+
+      showLoading(currentLang === 'id' ? 'Mengunggah data ke Google Sheets...' : 'Uploading database to Google Sheets...');
+
+      const payload = {
+        action: 'upload',
+        activities: JSON.parse(localStorage.getItem(DB_ACTIVITIES_KEY)),
+        categories: JSON.parse(localStorage.getItem(DB_CATEGORIES_KEY)),
+        statuses: JSON.parse(localStorage.getItem(DB_STATUS_KEY)),
+        fields: JSON.parse(localStorage.getItem(DB_FIELDS_KEY))
+      };
+
+      fetch(url, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(() => {
+        hideLoading();
+        Swal.fire({
+          icon: 'success',
+          title: currentLang === 'id' ? 'Berhasil Diunggah' : 'Uploaded successfully',
+          text: currentLang === 'id' ? 'Data berhasil disinkronkan ke Spreadsheet pusat!' : 'Local dataset successfully pushed to central Spreadsheet!',
+        });
+      })
+      .catch(err => {
+        hideLoading();
+        Swal.fire('Error Connection', translations[currentLang].alertSyncFailedRemote + " " + err.message, 'error');
+      });
+    }
+
+    function downloadSheetData() {
+      const url = localStorage.getItem(DB_SHEET_URL_KEY);
+      if (!url) {
+        Swal.fire({
+          icon: 'warning',
+          title: currentLang === 'id' ? 'Butuh URL' : 'URL Required',
+          text: translations[currentLang].alertNeedUrl
+        });
+        return;
+      }
+
+      showLoading(currentLang === 'id' ? 'Mengunduh data dari Google Sheets...' : 'Downloading dataset from Google Sheets...');
+
+      // Menyambung URL secara dinamis dengan tanda ? atau & agar parameter tidak rusak
+      const separator = url.includes('?') ? '&' : '?';
+      fetch(`${url}${separator}action=download`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.activities) {
+          localStorage.setItem(DB_ACTIVITIES_KEY, JSON.stringify(data.activities));
+        }
+        if (data.categories) {
+          localStorage.setItem(DB_CATEGORIES_KEY, JSON.stringify(data.categories));
+        }
+        if (data.statuses) {
+          localStorage.setItem(DB_STATUS_KEY, JSON.stringify(data.statuses));
+        }
+        if (data.fields) {
+          localStorage.setItem(DB_FIELDS_KEY, JSON.stringify(data.fields));
+        }
+        
+        hideLoading();
+        refreshData();
+        
+        Swal.fire({
+          icon: 'success',
+          title: currentLang === 'id' ? 'Sinkronisasi Sukses' : 'Sync Success',
+          text: translations[currentLang].alertSyncSuccessRemote,
+        });
+      })
+      .catch(err => {
+        hideLoading();
+        
+        Swal.fire({
+          title: currentLang === 'id' ? 'Gagal Sinkronisasi' : 'Sync Connection Failed',
+          text: translations[currentLang].alertSyncFailedRemote + " Menjalankan demo sinkronisasi mock data.",
+          icon: 'info',
+          showCancelButton: true,
+          confirmButtonText: 'Lanjutkan Demo Sinkron',
+          cancelButtonText: 'Batal'
+        }).then(result => {
+          if (result.isConfirmed) {
+            showLoading("Simulasi sinkronisasi cloud...");
+            setTimeout(() => {
+              hideLoading();
+              Swal.fire('Demo Berhasil', 'Data lokal disinkronkan dengan simulasi cloud.', 'success');
+            }, 1000);
+          }
+        });
+      });
+    }
+
+    // =========================================================================
+    // CRUD CONTROLLERS (MOCK SERVER SIDE EFFECTS)
+    // =========================================================================
+    function handleFormSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('form-id').value;
+      const start = document.getElementById('form-start').value;
+      const end = document.getElementById('form-end').value;
+
+      if (new Date(start) >= new Date(end)) {
+        Swal.fire(currentLang === 'id' ? 'Validasi Gagal' : 'Validation Failed', translations[currentLang].alertValidDate, 'warning');
+        return;
+      }
+
+      const customFieldsObj = {};
+      appFields.forEach(f => {
+        const el = document.getElementById(`custom-field-${f.id}`);
+        if (el) {
+          customFieldsObj[f.id] = el.value.trim();
+        }
+      });
+
+      const actData = {
+        title: document.getElementById('form-title').value.trim(),
+        startDateTime: new Date(start).toISOString(),
+        endDateTime: new Date(end).toISOString(),
+        category: document.getElementById('form-category').value,
+        status: document.getElementById('form-status').value,
+        color: document.getElementById('form-color').value,
+        description: document.getElementById('form-description').value.trim(),
+        isActive: formIsActive,
+        customFields: customFieldsObj
+      };
+
+      closeActivityModal();
+      showLoading(translations[currentLang].spinnerSaveAct);
+
+      setTimeout(() => {
+        let activities = JSON.parse(localStorage.getItem(DB_ACTIVITIES_KEY)) || [];
+        
+        if (id) {
+          activities = activities.map(act => {
+            if (act.id === id) {
+              return { ...act, ...actData };
+            }
+            return act;
+          });
+        } else {
+          const newId = 'ACT-' + new Date().getTime() + '-' + Math.floor(Math.random() * 1000);
+          activities.push({
+            id: newId,
+            ...actData,
+            createdBy: currentUserEmail,
+            createdAt: new Date().toISOString()
+          });
+        }
+
+        LocalDatabase.saveActivities(activities);
+        refreshData();
+        
+        Swal.fire({ 
+          icon: 'success', 
+          title: currentLang === 'id' ? 'Berhasil' : 'Success', 
+          text: translations[currentLang].alertSuccessSave, 
+          timer: 1500, 
+          showConfirmButton: false 
+        });
+      }, 500);
+    }
+
+    function confirmDeleteActivity(id) {
+      const act = appActivities.find(a => a.id === id);
+      if (!act) return;
+
+      Swal.fire({
+        title: currentLang === 'id' ? 'Hapus Aktivitas?' : 'Delete Activity?',
+        text: `"${act.title}" ${translations[currentLang].alertDeleteActConfirm}`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: translations[currentLang].btnYesDelete,
+        cancelButtonText: translations[currentLang].btnCancelAlert
+      }).then((result) => {
+        if (result.isConfirmed) {
+          showLoading(translations[currentLang].spinnerDelAct);
+          
+          setTimeout(() => {
+            let activities = JSON.parse(localStorage.getItem(DB_ACTIVITIES_KEY)) || [];
+            activities = activities.filter(act => act.id !== id);
+            LocalDatabase.saveActivities(activities);
+            refreshData();
+
+            Swal.fire({ 
+              icon: 'success', 
+              title: currentLang === 'id' ? 'Terhapus' : 'Deleted', 
+              text: translations[currentLang].alertSuccessDel, 
+              timer: 1500, 
+              showConfirmButton: false 
+            });
+          }, 400);
+        }
+      });
+    }
+
+    // =========================================================================
+    // MASTER CATEGORIES CRUD CONTROLLERS
+    // =========================================================================
+    function openCategoryModal() {
+      document.getElementById('category-form').reset();
+      document.getElementById('cat-id').value = '';
+      document.getElementById('category-modal-title').innerText = translations[currentLang].modalTitleAddCategory;
+      const m = document.getElementById('category-modal');
+      m.classList.remove('hidden'); m.classList.add('flex');
+    }
+
+    function openEditCategory(id, name, color) {
+      document.getElementById('category-form').reset();
+      document.getElementById('cat-id').value = id;
+      document.getElementById('cat-name').value = name;
+      document.getElementById('cat-color').value = color;
+      document.getElementById('category-modal-title').innerText = translations[currentLang].modalTitleEditCategory;
+      const m = document.getElementById('category-modal');
+      m.classList.remove('hidden'); m.classList.add('flex');
+    }
+
+    function closeCategoryModal() {
+      const m = document.getElementById('category-modal');
+      m.classList.add('hidden'); m.classList.remove('flex');
+    }
+
+    function handleCategorySubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('cat-id').value;
+      const name = document.getElementById('cat-name').value.trim();
+      const color = document.getElementById('cat-color').value;
+
+      closeCategoryModal();
+      showLoading(translations[currentLang].spinnerProcCat);
+
+      setTimeout(() => {
+        let categories = JSON.parse(localStorage.getItem(DB_CATEGORIES_KEY)) || [];
+
+        if (id) {
+          categories = categories.map(cat => {
+            if (cat.id === id) {
+              return { ...cat, name, color };
+            }
+            return cat;
+          });
+        } else {
+          const newId = 'CAT-' + new Date().getTime();
+          categories.push({ id: newId, name, color });
+        }
+
+        LocalDatabase.saveCategories(categories);
+        refreshData();
+
+        Swal.fire({ 
+          icon: 'success', 
+          title: currentLang === 'id' ? 'Sukses' : 'Success', 
+          text: translations[currentLang].alertSuccessMaster, 
+          timer: 1500, 
+          showConfirmButton: false 
+        });
+      }, 500);
+    }
+
+    function confirmDeleteCategory(id, name) {
+      Swal.fire({
+        title: currentLang === 'id' ? 'Hapus Kategori?' : 'Delete Category?',
+        text: translations[currentLang].alertDeleteCatConfirm,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: translations[currentLang].btnYesDelete,
+        cancelButtonText: translations[currentLang].btnCancelAlert
+      }).then((result) => {
+        if (result.isConfirmed) {
+          showLoading(translations[currentLang].spinnerDelAct);
+          
+          setTimeout(() => {
+            let categories = JSON.parse(localStorage.getItem(DB_CATEGORIES_KEY)) || [];
+            categories = categories.filter(cat => cat.id !== id);
+            LocalDatabase.saveCategories(categories);
+            refreshData();
+
+            Swal.fire({ 
+              icon: 'success', 
+              title: currentLang === 'id' ? 'Sukses' : 'Success', 
+              text: translations[currentLang].alertSuccessDel, 
+              timer: 1500, 
+              showConfirmButton: false 
+            });
+          }, 400);
+        }
+      });
+    }
+
+    // =========================================================================
+    // MASTER STATUSES CRUD CONTROLLERS
+    // =========================================================================
+    function openStatusModal() {
+      document.getElementById('status-form').reset();
+      document.getElementById('stat-id').value = '';
+      document.getElementById('status-modal-title').innerText = translations[currentLang].modalTitleAddStatus;
+      const m = document.getElementById('status-modal');
+      m.classList.remove('hidden'); m.classList.add('flex');
+    }
+
+    function openEditStatus(id, name, color) {
+      document.getElementById('status-form').reset();
+      document.getElementById('stat-id').value = id;
+      document.getElementById('stat-name').value = name;
+      document.getElementById('stat-color').value = color;
+      document.getElementById('status-modal-title').innerText = translations[currentLang].modalTitleEditStatus;
+      const m = document.getElementById('status-modal');
+      m.classList.remove('hidden'); m.classList.add('flex');
+    }
+
+    function closeStatusModal() {
+      const m = document.getElementById('status-modal');
+      m.classList.add('hidden'); m.classList.remove('flex');
+    }
+
+    function handleStatusSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('stat-id').value;
+      const name = document.getElementById('stat-name').value.trim();
+      const color = document.getElementById('stat-color').value;
+
+      closeStatusModal();
+      showLoading(translations[currentLang].spinnerProcStat);
+
+      setTimeout(() => {
+        let statuses = JSON.parse(localStorage.getItem(DB_STATUS_KEY)) || [];
+
+        if (id) {
+          statuses = statuses.map(stat => {
+            if (stat.id === id) {
+              return { ...stat, name, color };
+            }
+            return stat;
+          });
+        } else {
+          const newId = 'STAT-' + new Date().getTime();
+          statuses.push({ id: newId, name, color });
+        }
+
+        LocalDatabase.saveStatuses(statuses);
+        refreshData();
+
+        Swal.fire({ 
+          icon: 'success', 
+          title: currentLang === 'id' ? 'Sukses' : 'Success', 
+          text: translations[currentLang].alertSuccessMaster, 
+          timer: 1500, 
+          showConfirmButton: false 
+        });
+      }, 500);
+    }
+
+    function confirmDeleteStatus(id, name) {
+      Swal.fire({
+        title: currentLang === 'id' ? 'Hapus Status?' : 'Delete Status?',
+        text: translations[currentLang].alertDeleteStatConfirm,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: translations[currentLang].btnYesDelete,
+        cancelButtonText: translations[currentLang].btnCancelAlert
+      }).then((result) => {
+        if (result.isConfirmed) {
+          showLoading(translations[currentLang].spinnerDelAct);
+          
+          setTimeout(() => {
+            let statuses = JSON.parse(localStorage.getItem(DB_STATUS_KEY)) || [];
+            statuses = statuses.filter(stat => stat.id !== id);
+            LocalDatabase.saveStatuses(statuses);
+            refreshData();
+
+            Swal.fire({ 
+              icon: 'success', 
+              title: currentLang === 'id' ? 'Sukses' : 'Success', 
+              text: translations[currentLang].alertSuccessDel, 
+              timer: 1500, 
+              showConfirmButton: false 
+            });
+          }, 400);
+        }
+      });
+    }
+
+    // =========================================================================
+    // DYNAMIC COLUMNS/FIELDS CRUD CONTROLLERS
+    // =========================================================================
+    function openFieldModal() {
+      document.getElementById('field-form').reset();
+      document.getElementById('field-id').value = '';
+      document.getElementById('field-modal-title').innerText = translations[currentLang].modalTitleAddField;
+      const m = document.getElementById('field-modal');
+      m.classList.remove('hidden'); m.classList.add('flex');
+    }
+
+    function openEditField(id, name, type, required) {
+      document.getElementById('field-form').reset();
+      document.getElementById('field-id').value = id;
+      document.getElementById('field-name').value = name;
+      document.getElementById('field-type').value = type;
+      document.getElementById('field-required').checked = required;
+      document.getElementById('field-modal-title').innerText = translations[currentLang].modalTitleEditField;
+      const m = document.getElementById('field-modal');
+      m.classList.remove('hidden'); m.classList.add('flex');
+    }
+
+    function closeFieldModal() {
+      const m = document.getElementById('field-modal');
+      m.classList.add('hidden'); m.classList.remove('flex');
+    }
+
+    function handleFieldSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('field-id').value;
+      const name = document.getElementById('field-name').value.trim();
+      const type = document.getElementById('field-type').value;
+      const required = document.getElementById('field-required').checked;
+
+      closeFieldModal();
+      showLoading(translations[currentLang].spinnerProcField);
+
+      setTimeout(() => {
+        let fields = JSON.parse(localStorage.getItem(DB_FIELDS_KEY)) || [];
+
+        if (id) {
+          fields = fields.map(f => f.id === id ? { ...f, name, type, required } : f);
+        } else {
+          const newId = 'FLD-' + new Date().getTime();
+          fields.push({ id: newId, name, type, required });
+        }
+
+        LocalDatabase.saveFields(fields);
+        refreshData();
+
+        Swal.fire({ 
+          icon: 'success', 
+          title: currentLang === 'id' ? 'Sukses' : 'Success', 
+          text: translations[currentLang].alertSuccessMaster, 
+          timer: 1500, 
+          showConfirmButton: false 
+        });
+      }, 500);
+    }
+
+    function confirmDeleteField(id, name) {
+      Swal.fire({
+        title: currentLang === 'id' ? 'Hapus Kolom?' : 'Delete Column?',
+        text: translations[currentLang].alertDeleteFieldConfirm,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: translations[currentLang].btnYesDelete,
+        cancelButtonText: translations[currentLang].btnCancelAlert
+      }).then((result) => {
+        if (result.isConfirmed) {
+          showLoading(translations[currentLang].spinnerDelAct);
+          
+          setTimeout(() => {
+            let fields = JSON.parse(localStorage.getItem(DB_FIELDS_KEY)) || [];
+            fields = fields.filter(f => f.id !== id);
+            LocalDatabase.saveFields(fields);
+            
+            let activities = JSON.parse(localStorage.getItem(DB_ACTIVITIES_KEY)) || [];
+            activities = activities.map(act => {
+              if (act.customFields && act.customFields[id]) {
+                delete act.customFields[id];
+              }
+              return act;
+            });
+            LocalDatabase.saveActivities(activities);
+
+            refreshData();
+
+            Swal.fire({ 
+              icon: 'success', 
+              title: currentLang === 'id' ? 'Sukses' : 'Success', 
+              text: translations[currentLang].alertSuccessDel, 
+              timer: 1500, 
+              showConfirmButton: false 
+            });
+          }, 400);
+        }
+      });
+    }
+
+    // Helper loading indicator
+    function showLoading(msg) {
+      document.getElementById('spinner-text').innerText = msg;
+      document.getElementById('global-spinner').classList.remove('hidden');
+      document.getElementById('global-spinner').classList.add('flex');
+    }
+
+    function hideLoading() {
+      document.getElementById('global-spinner').classList.add('hidden');
+      document.getElementById('global-spinner').classList.remove('flex');
+    }
+  </script>
+</body>
+</html>
